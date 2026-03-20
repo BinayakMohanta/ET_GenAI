@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Compliance Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col font-sans">
+
+    <header class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold flex items-center gap-2">
+            <span>🏥</span> Healthcare AI Agent
+        </h1>
+        <div class="flex items-center gap-2">
+            <label class="text-sm">Active Role:</label>
+            <select id="role-selector" class="text-black px-2 py-1 rounded border-none outline-none">
+                <option value="Guest">Guest</option>
+                <option value="Medical_Professional">Medical Professional</option>
+            </select>
+        </div>
+    </header>
+
+    <main id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full">
+        <div class="flex flex-col gap-1 items-start">
+            <div class="bg-white text-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 max-w-[80%]">
+                Hello! I am your compliant medical coding assistant. Please select your role at the top right and ask for an ICD-10 or CPT code.
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 p-4">
+        <div class="max-w-4xl mx-auto flex gap-2">
+            <input type="text" id="user-input" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. What is the code for a fractured tibia?" onkeypress="handleEnter(event)">
+            <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors">
+                Send
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const roleSelector = document.getElementById('role-selector');
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            const role = roleSelector.value;
+            
+            // 1. Add User Message to UI
+            appendMessage(text, 'user');
+            userInput.value = '';
+
+            // 2. Add Loading State
+            const loadingId = appendLoading();
+
+            try {
+                // 3. Call the FastAPI Backend
+                const response = await fetch('http://localhost:8000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: text, 
+                        role: role,
+                        session_id: 'web_user_1' 
+                    })
+                });
+
+                const data = await response.json();
+                
+                // 4. Remove Loading State & Append AI Response
+                document.getElementById(loadingId).remove();
+                appendMessage(data.response, 'ai', data.is_compliant, data.audit_log);
+
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                appendMessage("Connection error: Ensure your FastAPI backend is running on localhost:8000.", 'ai', false, ["Failed to connect to backend."]);
+            }
+        }
+
+        function appendMessage(text, sender, isCompliant = true, auditLog = []) {
+            const div = document.createElement('div');
+            div.className = `flex flex-col gap-1 ${sender === 'user' ? 'items-end' : 'items-start'}`;
+            
+            let bubbleColor = sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-800';
+            if (!isCompliant) bubbleColor = 'bg-red-50 border border-red-200 text-red-800 font-medium';
+
+            let html = `
+                <div class="${bubbleColor} p-4 rounded-lg shadow-sm max-w-[80%] whitespace-pre-wrap">
+                    ${text}
+                </div>
+            `;
+
+            // Add Audit Log Dropdown for AI messages
+            if (sender === 'ai' && auditLog.length > 0) {
+                const logHtml = auditLog.map(log => `<li>${log}</li>`).join('');
+                const icon = isCompliant ? '✅' : '🚨';
+                html += `
+                    <details class="text-xs text-gray-500 mt-1 cursor-pointer max-w-[80%]">
+                        <summary class="hover:text-gray-700">${icon} View Audit Log</summary>
+                        <ul class="mt-2 pl-4 list-disc text-gray-400 bg-gray-100 p-2 rounded">${logHtml}</ul>
+                    </details>
+                `;
+            }
+
+            div.innerHTML = html;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendLoading() {
+            const id = 'loading-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex flex-col gap-1 items-start';
+            div.innerHTML = `
+                <div class="bg-gray-100 border border-gray-200 text-gray-500 p-3 rounded-lg flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Running Guardrails...
+                </div>
+            `;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return id;
+        }
+    </script>
+</body>
+</html>

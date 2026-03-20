@@ -1,4 +1,4 @@
-# ET_Guardrail
+# Domain-Specialized AI Agents with Compliance Guardrails 
 
 Minimal instructions to run the Healthcare Compliance Agent API and frontend.
 

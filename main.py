@@ -5,6 +5,7 @@ import operator
 from typing import Annotated, TypedDict, List
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
+import os
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph.message import add_messages
@@ -23,8 +24,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Connect to Ollama
-llm = ChatOllama(model="qwen2.5:7b", temperature=0)
+# Connect to Ollama (support remote Ollama URL via OLLAMA_URL env var)
+ollama_url = os.getenv("OLLAMA_URL")
+if ollama_url:
+    llm = ChatOllama(model="qwen2.5:7b", temperature=0, base_url=ollama_url)
+else:
+    llm = ChatOllama(model="qwen2.5:7b", temperature=0)
 memory = MemorySaver()
 
 # ==========================================

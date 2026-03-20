@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Set this to the public tunnel URL (see DEPLOY.md) if Ollama runs on your machine
+      - OLLAMA_URL=
+    restart: unless-stopped
+  static:
+    image: python:3.11-slim
+    working_dir: /static
+    command: python -m http.server 5500
+    volumes:
+      - ./:/static
+    ports:
+      - "5500:5500"
+    restart: unless-stopped

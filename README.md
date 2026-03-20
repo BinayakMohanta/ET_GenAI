@@ -50,6 +50,3 @@ Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8000/chat -ContentType "app
 ## Notes
 - If Ollama is not available or the named model is missing, the API will error when invoking the LLM.
 - `.gitignore` excludes `.venv/` and editor artifacts.
-
-## Repository
-Pushed to: https://github.com/ArjunJayakrishnan-codes/ET_GenAI.git

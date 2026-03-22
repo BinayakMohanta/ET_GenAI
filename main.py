@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import operator
 from typing import Annotated, TypedDict, List
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 import os
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
@@ -25,11 +25,11 @@ app.add_middleware(
 )
 
 # Connect to Ollama (support remote Ollama URL via OLLAMA_URL env var)
-ollama_url = os.getenv("OLLAMA_URL")
-if ollama_url:
-    llm = ChatOllama(model="qwen2.5:7b", temperature=0, base_url=ollama_url)
-else:
-    llm = ChatOllama(model="qwen2.5:7b", temperature=0)
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0,
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 memory = MemorySaver()
 
 # ==========================================
